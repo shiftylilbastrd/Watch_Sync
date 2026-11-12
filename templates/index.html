@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>watch_sync</title>
+<style>
+  body { background:#14171c; color:#ddd; font-family: system-ui, sans-serif; margin:0; padding:24px; }
+  h1 { color:#e0a030; margin-top:0; }
+  h2 { color:#ccc; font-size:15px; text-transform:uppercase; letter-spacing:.05em; margin-top:32px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #2a2f38; font-size:14px; }
+  th { color:#888; font-weight:600; font-size:12px; text-transform:uppercase; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#262b33; font-size:12px; margin:1px; }
+  .ok { color:#5fbf6b; }
+  .fail { color:#e05d5d; }
+  form.inline { display:inline; }
+  button { background:#e0a030; color:#1a1206; border:0; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:13px; }
+  button.danger { background:#3a2a2a; color:#e05d5d; }
+  button.ghost { background:#262b33; color:#ccc; }
+  .add-form { background:#1b1f26; border:1px solid #2a2f38; border-radius:8px; padding:16px; margin-top:12px; }
+  .add-form label { display:block; font-size:12px; color:#888; margin-top:10px; }
+  .add-form input { width:100%; box-sizing:border-box; background:#14171c; border:1px solid #2a2f38; color:#ddd; padding:7px 9px; border-radius:4px; margin-top:3px; }
+  .add-form .row { display:flex; gap:12px; }
+  .add-form .row > div { flex:1; }
+  .err { background:#3a1f1f; border:1px solid #5a2a2a; color:#e05d5d; padding:10px 14px; border-radius:6px; margin-top:12px; }
+  .muted { color:#777; font-size:13px; }
+  .empty { color:#777; padding:16px 0; }
+</style>
+</head>
+<body>
+<h1>watch_sync</h1>
+<p class="muted">Mirrors Plex watch status from source accounts to target accounts. Polls every few seconds in the background.</p>
+
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+<h2>Rules</h2>
+{% if rules %}
+<table>
+  <thead><tr><th>Name</th><th>Sources</th><th>Targets</th><th>Last synced</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rules %}
+    <tr>
+      <td>{{ r.name }}</td>
+      <td>{% for s in r.sources %}<span class="pill">{{ s }}</span>{% endfor %}</td>
+      <td>{% for t in r.targets %}<span class="pill">{{ t }}</span>{% endfor %}</td>
+      <td class="muted">
+        {% for s, ts in r.watermarks.items() %}
+          {{ s }}: {{ ts|int if ts else "never" }}<br>
+        {% endfor %}
+      </td>
+      <td>
+        <form class="inline" method="post" action="{{ url_for('delete_rule', name=r.name) }}"
+              onsubmit="return confirm('Delete rule {{ r.name }}?');">
+          <button type="submit" class="danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No rules yet - add one below.</div>
+{% endif %}
+
+<div class="add-form">
+  <form method="post" action="{{ url_for('add_rule') }}">
+    <div class="row">
+      <div>
+        <label>Rule name</label>
+        <input name="name" placeholder="family" required>
+      </div>
+      <div>
+        <label>Source account(s), comma separated</label>
+        <input name="sources" placeholder="Family" required>
+      </div>
+      <div>
+        <label>Target account(s), comma separated</label>
+        <input name="targets" placeholder="shiftylilbastrd, momsgonecrazy" required>
+      </div>
+    </div>
+    <div style="margin-top:12px;"><button type="submit">Add rule</button></div>
+  </form>
+</div>
+
+<h2>Recent activity</h2>
+{% if activity %}
+<table>
+  <thead><tr><th>When</th><th>Rule</th><th>Target</th><th>Item</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for a in activity %}
+    <tr>
+      <td class="muted">{{ a.at }}</td>
+      <td>{{ a.rule_name }}</td>
+      <td>{{ a.target }}</td>
+      <td>{{ a.label }} <span class="muted">(watched by {{ a.watched_by }})</span></td>
+      <td class="{{ 'ok' if a.status == 'ok' else 'fail' }}">{{ a.status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Nothing synced yet.</div>
+{% endif %}
+
+</body>
+</html>

@@ -1,9 +1,0 @@
-{
-  "rules": [
-    {
-      "name": "family",
-      "sources": ["Family"],
-      "targets": ["shiftylilbastrd", "momsgonecrazy"]
-    }
-  ]
-}

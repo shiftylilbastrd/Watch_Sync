@@ -11,7 +11,10 @@ on:
   workflow_dispatch: {}
 
 env:
-  IMAGE: ghcr.io/${{ github.repository }}
+  # Hardcoded lowercase - github.repository preserves the repo's actual case
+  # (Watch_Sync), but Docker/GHCR tags must be lowercase, so deriving it
+  # from github.repository breaks the build.
+  IMAGE: ghcr.io/shiftylilbastrd/watch_sync
 
 jobs:
   build-and-push:
