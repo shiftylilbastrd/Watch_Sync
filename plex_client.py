@@ -11,6 +11,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 PLEX_URL = os.environ.get("PLEX_URL", "http://192.168.1.13:32400")
+PLEX_TOKEN_PINNED = os.environ.get("PLEX_TOKEN", "")
 PREFS_PINNED = os.environ.get("PLEX_PREFS", "")
 PREFS_GLOB_BASE = os.environ.get("PLEX_PREFS_GLOB_BASE", "/appdata")
 TOKEN_CACHE_SECONDS = 30 * 60
@@ -65,6 +66,12 @@ def find_prefs():
 
 
 def admin_token():
+    # A directly-set PLEX_TOKEN always wins - this is the supported path
+    # (same as every other app on the server: paste the token in a setting
+    # rather than relying on us to find it on disk). Auto-detecting it from
+    # Preferences.xml is a fallback for anyone who doesn't set it.
+    if PLEX_TOKEN_PINNED:
+        return PLEX_TOKEN_PINNED
     prefs = find_prefs()
     xml = open(prefs, encoding="utf-8", errors="ignore").read()
     m = re.search(r'PlexOnlineToken="([^"]+)"', xml)

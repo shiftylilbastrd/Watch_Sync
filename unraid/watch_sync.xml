@@ -22,9 +22,10 @@
   <DonateLink/>
   <Requires/>
   <Config Name="WebUI" Target="8099" Default="8099" Mode="tcp" Description="Rules and recent-activity page" Type="Port" Display="always" Required="true" Mask="false">8099</Config>
-  <Config Name="Appdata (read-only)" Target="/appdata" Default="/mnt/user/appdata" Mode="ro" Description="Your whole appdata share, read-only - used to auto-find Plex's Preferences.xml without needing its exact container/folder name" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata</Config>
   <Config Name="Data" Target="/data" Default="/mnt/user/appdata/watch_sync" Mode="rw" Description="Rules database, sync watermarks, activity log" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watch_sync</Config>
+  <Config Name="Appdata (read-only, optional)" Target="/appdata" Default="/mnt/user/appdata" Mode="ro" Description="Only needed if you leave PLEX_TOKEN blank - used to auto-find Plex's Preferences.xml on disk instead" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata</Config>
   <Config Name="PLEX_URL" Target="PLEX_URL" Default="http://192.168.1.13:32400" Mode="" Description="Plex server URL" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.13:32400</Config>
+  <Config Name="PLEX_TOKEN" Target="PLEX_TOKEN" Default="" Mode="" Description="Plex admin X-Plex-Token - paste it in, same as any other app's API key setting (see support.plex.tv/articles/204059436). Leave blank to fall back to auto-detecting it from Preferences.xml via the Appdata mount below." Type="Variable" Display="always" Required="false" Mask="true"></Config>
   <Config Name="POLL_INTERVAL_SECONDS" Target="POLL_INTERVAL_SECONDS" Default="45" Mode="" Description="How often (seconds) to poll Plex for new watch history" Type="Variable" Display="advanced" Required="false" Mask="false">45</Config>
   <Config Name="FIRST_RUN_HOURS" Target="FIRST_RUN_HOURS" Default="24" Mode="" Description="How far back a rule looks on its very first run, before it has a watermark" Type="Variable" Display="advanced" Required="false" Mask="false">24</Config>
   <Config Name="traefik.enable" Target="traefik.enable" Default="true" Mode="" Description="" Type="Label" Display="always" Required="false" Mask="false">true</Config>

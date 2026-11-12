@@ -39,11 +39,20 @@ without touching any config file or redeploying.
 - Image: `ghcr.io/shiftylilbastrd/watch_sync:latest`
 - Port: `8099` → the web UI (rules + recent activity)
 - Mounts:
-  - `/appdata` (read-only) → your whole `/mnt/user/appdata` share - the app searches under it for Plex's `Preferences.xml` itself (same auto-discovery the old script used), so it doesn't need to know your Plex container's exact folder name. Set `PLEX_PREFS` instead if you'd rather pin an exact file.
   - `/data` → the rules database, sync watermarks, and activity log
-- Env (all optional, defaults shown):
+  - `/appdata` (read-only, optional) → only needed if you leave `PLEX_TOKEN`
+    unset; the app then searches your whole `/mnt/user/appdata` share for
+    Plex's `Preferences.xml` to pull the token from. Set `PLEX_PREFS` instead
+    if you'd rather pin an exact file.
+- Env:
   - `PLEX_URL=http://192.168.1.13:32400`
-  - `PLEX_PREFS_GLOB_BASE=/appdata`
+  - `PLEX_TOKEN` — your Plex admin `X-Plex-Token`, pasted in directly (same
+    as any other app's API-key setting — see
+    [support.plex.tv/articles/204059436](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
+    for how to find it). **Recommended** — skips on-disk auto-detection
+    entirely, so it doesn't matter what your Plex container's appdata folder
+    is named. Leave blank to fall back to the `/appdata` auto-discovery above.
+  - `PLEX_PREFS_GLOB_BASE=/appdata` (optional, only used when `PLEX_TOKEN` is unset)
   - `DB_PATH=/data/watch_sync.db`
   - `POLL_INTERVAL_SECONDS=45`
   - `FIRST_RUN_HOURS=24` — how far back a rule looks on its very first run (no prior watermark)
