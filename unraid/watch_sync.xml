@@ -3,7 +3,7 @@
   <Name>watch_sync</Name>
   <Repository>ghcr.io/shiftylilbastrd/watch_sync:latest</Repository>
   <Registry>https://ghcr.io</Registry>
-  <Network>bridge</Network>
+  <Network>athena</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
@@ -13,7 +13,7 @@
   <Category>MediaServer:Other Tools:</Category>
   <WebUI>http://[IP]:[PORT:8099]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/shiftylilbastrd/Watch_Sync/main/unraid/watch_sync.xml</TemplateURL>
-  <Icon/>
+  <Icon>https://raw.githubusercontent.com/shiftylilbastrd/Watch_Sync/main/icon.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
@@ -27,4 +27,9 @@
   <Config Name="PLEX_URL" Target="PLEX_URL" Default="http://192.168.1.13:32400" Mode="" Description="Plex server URL" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.13:32400</Config>
   <Config Name="POLL_INTERVAL_SECONDS" Target="POLL_INTERVAL_SECONDS" Default="45" Mode="" Description="How often (seconds) to poll Plex for new watch history" Type="Variable" Display="advanced" Required="false" Mask="false">45</Config>
   <Config Name="FIRST_RUN_HOURS" Target="FIRST_RUN_HOURS" Default="24" Mode="" Description="How far back a rule looks on its very first run, before it has a watermark" Type="Variable" Display="advanced" Required="false" Mask="false">24</Config>
+  <Config Name="traefik.enable" Target="traefik.enable" Default="true" Mode="" Description="" Type="Label" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="traefik.http.routers.watch-sync.rule" Target="traefik.http.routers.watch-sync.rule" Default="Host(&#96;watch-sync.shifflett.xyz&#96;)" Mode="" Description="" Type="Label" Display="always" Required="false" Mask="false">Host(&#96;watch-sync.shifflett.xyz&#96;)</Config>
+  <Config Name="traefik.http.routers.watch-sync.entrypoints" Target="traefik.http.routers.watch-sync.entrypoints" Default="https" Mode="" Description="" Type="Label" Display="always" Required="false" Mask="false">https</Config>
+  <Config Name="traefik.http.routers.watch-sync.tls" Target="traefik.http.routers.watch-sync.tls" Default="true" Mode="" Description="" Type="Label" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="traefik.http.services.watch-sync.loadbalancer.server.port" Target="traefik.http.services.watch-sync.loadbalancer.server.port" Default="8099" Mode="" Description="" Type="Label" Display="always" Required="false" Mask="false">8099</Config>
 </Container>
