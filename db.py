@@ -41,6 +41,10 @@ def init_db():
             status TEXT NOT NULL,
             at TEXT NOT NULL
         )""")
+        c.execute("""CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )""")
 
 
 def now():
@@ -131,3 +135,22 @@ def recent_activity(limit=50):
     with _conn() as c:
         rows = c.execute("SELECT * FROM activity ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
     return [dict(r) for r in rows]
+
+
+# --- settings (key/value - Plex token, this app's stable client id) --------
+
+def get_setting(key, default=None):
+    with _conn() as c:
+        row = c.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_setting(key, value):
+    with _conn() as c:
+        c.execute("""INSERT INTO settings (key, value) VALUES (?,?)
+                     ON CONFLICT(key) DO UPDATE SET value=excluded.value""", (key, value))
+
+
+def delete_setting(key):
+    with _conn() as c:
+        c.execute("DELETE FROM settings WHERE key=?", (key,))

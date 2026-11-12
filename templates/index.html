@@ -27,6 +27,9 @@
   .err { background:#3a1f1f; border:1px solid #5a2a2a; color:#e05d5d; padding:10px 14px; border-radius:6px; margin-top:12px; }
   .muted { color:#777; font-size:13px; }
   .empty { color:#777; padding:16px 0; }
+  .plex-status { display:flex; align-items:center; gap:10px; background:#1b1f26; border:1px solid #2a2f38;
+                  border-radius:8px; padding:10px 14px; margin-top:14px; font-size:14px; }
+  .plex-status form { margin-left:auto; }
 </style>
 </head>
 <body>
@@ -34,6 +37,19 @@
 <p class="muted">Mirrors Plex watch status from source accounts to target accounts. Polls every few seconds in the background.</p>
 
 {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+<div class="plex-status">
+  {% if plex_linked %}
+    <span class="ok">&#9679;</span> Signed in with Plex
+    <form class="inline" method="post" action="{{ url_for('plex_disconnect') }}"
+          onsubmit="return confirm('Disconnect this Plex account? Sync will stop until you sign in again.');">
+      <button type="submit" class="ghost">Disconnect</button>
+    </form>
+  {% else %}
+    <span class="fail">&#9679;</span> Not signed in to Plex yet
+    <a href="{{ url_for('plex_connect') }}"><button type="button">Sign in with Plex</button></a>
+  {% endif %}
+</div>
 
 <h2>Rules</h2>
 {% if rules %}

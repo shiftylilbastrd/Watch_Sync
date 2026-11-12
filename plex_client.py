@@ -6,15 +6,20 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 import xml.etree.ElementTree as ET
+
+import db
 
 PLEX_URL = os.environ.get("PLEX_URL", "http://192.168.1.13:32400")
 PLEX_TOKEN_PINNED = os.environ.get("PLEX_TOKEN", "")
 PREFS_PINNED = os.environ.get("PLEX_PREFS", "")
 PREFS_GLOB_BASE = os.environ.get("PLEX_PREFS_GLOB_BASE", "/appdata")
 TOKEN_CACHE_SECONDS = 30 * 60
+PRODUCT_NAME = "Watch Sync"
 
 
 def log(*a):
@@ -66,10 +71,13 @@ def find_prefs():
 
 
 def admin_token():
-    # A directly-set PLEX_TOKEN always wins - this is the supported path
-    # (same as every other app on the server: paste the token in a setting
-    # rather than relying on us to find it on disk). Auto-detecting it from
-    # Preferences.xml is a fallback for anyone who doesn't set it.
+    # Precedence: a token saved via "Sign in with Plex" (stored in our own
+    # DB, not an env var) > a directly-set PLEX_TOKEN env var > auto-
+    # detecting it from Preferences.xml on disk, which depends on the Plex
+    # container's appdata folder name matching a glob and doesn't always hold.
+    saved = db.get_setting("plex_token")
+    if saved:
+        return saved
     if PLEX_TOKEN_PINNED:
         return PLEX_TOKEN_PINNED
     prefs = find_prefs()
@@ -78,6 +86,59 @@ def admin_token():
     if not m:
         raise RuntimeError("PlexOnlineToken not found in " + prefs)
     return m.group(1)
+
+
+def client_identifier():
+    """A stable id for this app instance, persisted in our DB (not derived
+    from anything Plex-specific) - plex.tv ties a sign-in PIN to whichever
+    client id requested it, so this has to stay the same across requests
+    and restarts for the "Sign in with Plex" flow to work."""
+    cid = db.get_setting("client_id")
+    if not cid:
+        cid = uuid.uuid4().hex
+        db.set_setting("client_id", cid)
+    return cid
+
+
+def _plex_tv_headers(accept_json=True):
+    return {
+        "Accept": "application/json" if accept_json else "application/xml",
+        "X-Plex-Client-Identifier": client_identifier(),
+        "X-Plex-Product": PRODUCT_NAME,
+    }
+
+
+def create_pin():
+    """Starts the official Plex account-linking flow (the same one
+    Tautulli/Overseerr use): asks plex.tv for a one-time pin, which the
+    person then approves by signing in on Plex's own hosted page. Returns
+    (pin_id, auth_url) - auth_url is where to send their browser."""
+    data = urllib.parse.urlencode({"strong": "true"}).encode()
+    req = urllib.request.Request("https://plex.tv/api/v2/pins", data=data, method="POST",
+                                  headers=_plex_tv_headers())
+    with urllib.request.urlopen(req, timeout=15) as r:
+        pin = json.loads(r.read())
+    return pin["id"], pin["code"]
+
+
+def auth_url(code, forward_url):
+    q = urllib.parse.urlencode({
+        "clientID": client_identifier(),
+        "code": code,
+        "context[device][product]": PRODUCT_NAME,
+        "forwardUrl": forward_url,
+    })
+    return "https://app.plex.tv/auth#?" + q
+
+
+def check_pin(pin_id):
+    """Polls plex.tv for whether the pin above has been approved yet.
+    Returns the auth token once it has been, otherwise None."""
+    req = urllib.request.Request(
+        f"https://plex.tv/api/v2/pins/{pin_id}", method="GET", headers=_plex_tv_headers())
+    with urllib.request.urlopen(req, timeout=15) as r:
+        pin = json.loads(r.read())
+    return pin.get("authToken") or None
 
 
 class PlexClient:

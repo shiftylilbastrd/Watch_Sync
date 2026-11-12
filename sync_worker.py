@@ -60,8 +60,16 @@ def run_rule(plex, rule):
 def _loop():
     log("watch-sync worker starting; polling every", POLL_INTERVAL_SECONDS, "seconds")
     plex = None
+    token_version = None
     while True:
         try:
+            # Re-linking (or disconnecting) Plex from the web UI bumps this -
+            # pick up the change right away instead of waiting for this
+            # client's token to start failing on its own.
+            current_version = db.get_setting("plex_token_version")
+            if current_version != token_version:
+                plex = None
+                token_version = current_version
             if plex is None:
                 # Constructing PlexClient() can fail (Plex unreachable,
                 # Preferences.xml not found yet, token not ready) - that must
