@@ -41,9 +41,16 @@ def find_prefs():
     needing to know the Plex container's exact folder name."""
     if PREFS_PINNED and os.path.exists(PREFS_PINNED):
         return PREFS_PINNED
+    # PREFS_GLOB_BASE is already a single, specific mount point (the Docker
+    # template mounts the host's appdata share directly to it) - the Plex
+    # folder sits directly under it, e.g. /appdata/Plex-Media-Server/...,
+    # not nested one level deeper. (The old bash script's "*" before
+    # [Pp]lex* matched variant appdata SHARE names on the host, like
+    # appdata vs appdata2 - that's not needed here since the template
+    # mounts one specific path.)
     patterns = [
-        os.path.join(PREFS_GLOB_BASE, "*", "[Pp]lex*", "Preferences.xml"),
-        os.path.join(PREFS_GLOB_BASE, "*", "[Pp]lex*", "Library", "Application Support",
+        os.path.join(PREFS_GLOB_BASE, "[Pp]lex*", "Preferences.xml"),
+        os.path.join(PREFS_GLOB_BASE, "[Pp]lex*", "Library", "Application Support",
                       "Plex Media Server", "Preferences.xml"),
     ]
     for pattern in patterns:
@@ -53,7 +60,8 @@ def find_prefs():
                     return path
             except OSError:
                 continue
-    sys.exit(f"Preferences.xml not found (checked PLEX_PREFS={PREFS_PINNED!r} and under {PREFS_GLOB_BASE!r})")
+    raise RuntimeError(
+        f"Preferences.xml not found (checked PLEX_PREFS={PREFS_PINNED!r} and under {PREFS_GLOB_BASE!r})")
 
 
 def admin_token():
@@ -61,7 +69,7 @@ def admin_token():
     xml = open(prefs, encoding="utf-8", errors="ignore").read()
     m = re.search(r'PlexOnlineToken="([^"]+)"', xml)
     if not m:
-        sys.exit("PlexOnlineToken not found in " + prefs)
+        raise RuntimeError("PlexOnlineToken not found in " + prefs)
     return m.group(1)
 
 

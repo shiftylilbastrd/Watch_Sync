@@ -59,13 +59,19 @@ def run_rule(plex, rule):
 
 def _loop():
     log("watch-sync worker starting; polling every", POLL_INTERVAL_SECONDS, "seconds")
-    plex = PlexClient()
+    plex = None
     while True:
         try:
+            if plex is None:
+                # Constructing PlexClient() can fail (Plex unreachable,
+                # Preferences.xml not found yet, token not ready) - that must
+                # never kill this thread/process, just get retried next tick.
+                plex = PlexClient()
             for rule in db.list_rules():
                 run_rule(plex, rule)
         except Exception:
             log("ERROR during poll cycle:\n" + traceback.format_exc())
+            plex = None
         time.sleep(POLL_INTERVAL_SECONDS)
 
 
