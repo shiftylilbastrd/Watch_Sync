@@ -156,8 +156,39 @@ class PlexClient:
     def accounts(self):
         if time.time() - self._accounts_at > TOKEN_CACHE_SECONDS or not self._accounts:
             accts = http(PLEX_URL + "/accounts", self.tok)["MediaContainer"].get("Account", [])
-            self._accounts = {(a.get("name") or "").lower(): a["id"] for a in accts if a.get("name")}
-            self._account_display = sorted({a.get("name") for a in accts if a.get("name")}, key=str.lower)
+            raw = {}
+            display_by_key = {}
+            for a in accts:
+                name = (a.get("name") or "").strip()
+                if not name:
+                    continue
+                key = name.lower()
+                raw[key] = a["id"]
+                display_by_key.setdefault(key, name)
+
+            # Plex's local /accounts list can hold stale entries left over
+            # from before someone was renamed/recreated (seen in practice: a
+            # dead "Melissa" Home-user record alongside her real "Melissa
+            # Shifflett"/momsgonecrazy account) - cross-check against who's
+            # actually resolvable right now (owner + current Home/shared
+            # users) and drop anything that isn't, so neither the dropdown
+            # nor rule matching treats a dead account as real.
+            valid = set(self.user_tokens(set(raw.keys())).keys())
+            # Guard against a transient plex.tv outage: user_tokens() logs
+            # and swallows failures in its shared_servers/home_users lookups
+            # rather than raising, so a bad moment there could otherwise
+            # resolve to just the owner and wipe every real account out of
+            # the list below. Only filter when enough resolved to look like
+            # the lookups actually worked.
+            if len(valid) > 1:
+                self._accounts = {k: v for k, v in raw.items() if k in valid}
+                self._account_display = sorted(
+                    (name for key, name in display_by_key.items() if key in valid), key=str.lower)
+            else:
+                log("couldn't confirm current Plex users (plex.tv lookup came back too thin) - "
+                    "showing the unfiltered account list instead of risking hiding real ones")
+                self._accounts = raw
+                self._account_display = sorted(display_by_key.values(), key=str.lower)
             self._accounts_at = time.time()
         return self._accounts
 
