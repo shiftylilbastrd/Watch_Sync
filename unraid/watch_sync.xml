@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>watch_sync</Name>
+  <Repository>ghcr.io/shiftylilbastrd/watch_sync:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/shiftylilbastrd/Watch_Sync</Support>
+  <Project>https://github.com/shiftylilbastrd/Watch_Sync</Project>
+  <Overview>Mirrors Plex watch status from source accounts to target accounts (e.g. a shared "Family" account to individual profiles). Polls Plex's own watch-history endpoint in the background; manage sync rules from its web UI.</Overview>
+  <Category>MediaServer:Other Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8099]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/shiftylilbastrd/Watch_Sync/main/unraid/watch_sync.xml</TemplateURL>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI" Target="8099" Default="8099" Mode="tcp" Description="Rules and recent-activity page" Type="Port" Display="always" Required="true" Mask="false">8099</Config>
+  <Config Name="Appdata (read-only)" Target="/appdata" Default="/mnt/user/appdata" Mode="ro" Description="Your whole appdata share, read-only - used to auto-find Plex's Preferences.xml without needing its exact container/folder name" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/watch_sync" Mode="rw" Description="Rules database, sync watermarks, activity log" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/watch_sync</Config>
+  <Config Name="PLEX_URL" Target="PLEX_URL" Default="http://192.168.1.13:32400" Mode="" Description="Plex server URL" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.13:32400</Config>
+  <Config Name="POLL_INTERVAL_SECONDS" Target="POLL_INTERVAL_SECONDS" Default="45" Mode="" Description="How often (seconds) to poll Plex for new watch history" Type="Variable" Display="advanced" Required="false" Mask="false">45</Config>
+  <Config Name="FIRST_RUN_HOURS" Target="FIRST_RUN_HOURS" Default="24" Mode="" Description="How far back a rule looks on its very first run, before it has a watermark" Type="Variable" Display="advanced" Required="false" Mask="false">24</Config>
+</Container>

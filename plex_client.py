@@ -73,6 +73,7 @@ class PlexClient:
         self.tok = admin_token()
         self._accounts_at = 0
         self._accounts = {}          # name(lower) -> account id
+        self._account_display = []   # account names as Plex shows them, for UI dropdowns
         self._user_tokens_at = 0
         self._user_tokens = {}       # name(lower) -> server access token
 
@@ -80,8 +81,15 @@ class PlexClient:
         if time.time() - self._accounts_at > TOKEN_CACHE_SECONDS or not self._accounts:
             accts = http(PLEX_URL + "/accounts", self.tok)["MediaContainer"].get("Account", [])
             self._accounts = {(a.get("name") or "").lower(): a["id"] for a in accts if a.get("name")}
+            self._account_display = sorted({a.get("name") for a in accts if a.get("name")}, key=str.lower)
             self._accounts_at = time.time()
         return self._accounts
+
+    def account_names(self):
+        """Account names in Plex's own casing, for populating a dropdown.
+        Matching elsewhere stays case-insensitive via accounts()."""
+        self.accounts()
+        return self._account_display
 
     def user_tokens(self, needed):
         """needed: set of lowercased usernames we need tokens for. Only

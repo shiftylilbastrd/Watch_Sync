@@ -19,7 +19,8 @@
   button.ghost { background:#262b33; color:#ccc; }
   .add-form { background:#1b1f26; border:1px solid #2a2f38; border-radius:8px; padding:16px; margin-top:12px; }
   .add-form label { display:block; font-size:12px; color:#888; margin-top:10px; }
-  .add-form input { width:100%; box-sizing:border-box; background:#14171c; border:1px solid #2a2f38; color:#ddd; padding:7px 9px; border-radius:4px; margin-top:3px; }
+  .add-form input, .add-form select { width:100%; box-sizing:border-box; background:#14171c; border:1px solid #2a2f38; color:#ddd; padding:7px 9px; border-radius:4px; margin-top:3px; }
+  .add-form select[multiple] { height:110px; }
   .add-form .row { display:flex; gap:12px; }
   .add-form .row > div { flex:1; }
   .err { background:#3a1f1f; border:1px solid #5a2a2a; color:#e05d5d; padding:10px 14px; border-radius:6px; margin-top:12px; }
@@ -70,16 +71,24 @@
         <input name="name" placeholder="family" required>
       </div>
       <div>
-        <label>Source account(s), comma separated</label>
-        <input name="sources" placeholder="Family" required>
+        <label>Source account(s) - ctrl/cmd-click to pick more than one</label>
+        <select name="sources" multiple required>
+          {% for a in accounts %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+        </select>
       </div>
       <div>
-        <label>Target account(s), comma separated</label>
-        <input name="targets" placeholder="shiftylilbastrd, momsgonecrazy" required>
+        <label>Target account(s) - ctrl/cmd-click to pick more than one</label>
+        <select name="targets" multiple required>
+          {% for a in accounts %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+        </select>
       </div>
     </div>
     <div style="margin-top:12px;"><button type="submit">Add rule</button></div>
   </form>
+  {% if not accounts %}
+  <p class="muted" style="margin-top:10px;">Couldn't reach Plex to list accounts right now - the server may be
+    starting up or temporarily unreachable. Reload once it's back.</p>
+  {% endif %}
 </div>
 
 <h2>Recent activity</h2>

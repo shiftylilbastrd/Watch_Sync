@@ -3,6 +3,30 @@ import os
 from flask import Flask, redirect, render_template, request, url_for
 
 import db
+from plex_client import PlexClient, log
+
+# One client per process, reused across requests so its internal account/
+# token cache (PlexClient.TOKEN_CACHE_SECONDS) actually does something -
+# a fresh instance per request would re-hit Plex on every page load.
+_plex = None
+
+
+def _get_plex():
+    global _plex
+    if _plex is None:
+        _plex = PlexClient()
+    return _plex
+
+
+def _account_choices():
+    """Live account names for the dropdowns. Returns [] (page still
+    renders, just with empty selects) if Plex can't be reached right now -
+    a page the admin tool can't open is worse than one with a stale/empty list."""
+    try:
+        return _get_plex().account_names()
+    except Exception as e:
+        log("couldn't fetch Plex accounts for the UI:", e)
+        return []
 
 
 def create_app():
@@ -17,13 +41,15 @@ def create_app():
         for r in rules:
             r["watermarks"] = {s: watermarks.get((r["name"], s)) for s in r["sources"]}
         activity = db.recent_activity(50)
-        return render_template("index.html", rules=rules, activity=activity, error=request.args.get("error"))
+        accounts = _account_choices()
+        return render_template("index.html", rules=rules, activity=activity,
+                                accounts=accounts, error=request.args.get("error"))
 
     @app.route("/rules", methods=["POST"])
     def add_rule():
         name = request.form.get("name", "").strip()
-        sources = _split(request.form.get("sources", ""))
-        targets = _split(request.form.get("targets", ""))
+        sources = request.form.getlist("sources")
+        targets = request.form.getlist("targets")
         err = _validate(name, sources, targets, is_new=True)
         if err:
             return redirect(url_for("index", error=err))
@@ -32,8 +58,8 @@ def create_app():
 
     @app.route("/rules/<name>/edit", methods=["POST"])
     def edit_rule(name):
-        sources = _split(request.form.get("sources", ""))
-        targets = _split(request.form.get("targets", ""))
+        sources = request.form.getlist("sources")
+        targets = request.form.getlist("targets")
         err = _validate(name, sources, targets, is_new=False)
         if err:
             return redirect(url_for("index", error=err))
@@ -46,10 +72,6 @@ def create_app():
         return redirect(url_for("index"))
 
     return app
-
-
-def _split(raw):
-    return [s.strip() for s in raw.split(",") if s.strip()]
 
 
 def _validate(name, sources, targets, is_new):
