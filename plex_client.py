@@ -224,8 +224,17 @@ class PlexClient:
         try:
             root = ET.fromstring(http("https://plex.tv/api/home/users", tok, accept_json=False))
             for u in root.iter("User"):
-                name = (u.get("username") or u.get("title") or "").lower()
-                if not name or name in self._user_tokens or name not in needed:
+                # A Plex Home user's plex.tv username and title can each
+                # differ from the short handle the PMS server itself reports
+                # in /accounts (managed/PIN-only kids' accounts often have no
+                # real username at all - just a title; others have a real
+                # username that's unrelated to the server-side handle, while
+                # their title happens to match it). Checking only one field
+                # (as before) can miss a user whose OTHER field is the one
+                # that actually matches - so check both as candidate keys.
+                candidates = {c.strip().lower() for c in (u.get("username"), u.get("title")) if c and c.strip()}
+                matched = candidates & needed
+                if not matched or matched <= set(self._user_tokens.keys()):
                     continue
                 sw = ET.fromstring(http("https://plex.tv/api/home/users/%s/switch" % u.get("id"), tok, "POST", False))
                 utok = sw.get("authenticationToken") or sw.get("authToken")
@@ -234,7 +243,11 @@ class PlexClient:
                 res = ET.fromstring(http("https://plex.tv/api/resources?includeHttps=1", utok, accept_json=False))
                 for d in res.iter("Device"):
                     if d.get("clientIdentifier") == ident and d.get("accessToken"):
-                        self._user_tokens[name] = d.get("accessToken")
+                        # Store under every matched key, not just one, so a
+                        # later lookup succeeds regardless of which name form
+                        # the caller happens to use for this person.
+                        for key in matched:
+                            self._user_tokens[key] = d.get("accessToken")
         except Exception as e:
             log("home users lookup failed:", e)
         self._user_tokens_at = time.time()
