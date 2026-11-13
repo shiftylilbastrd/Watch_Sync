@@ -21,9 +21,16 @@
   .add-form { background:#1b1f26; border:1px solid #2a2f38; border-radius:8px; padding:16px; margin-top:12px; }
   .add-form label { display:block; font-size:12px; color:#888; margin-top:10px; }
   .add-form input, .add-form select { width:100%; box-sizing:border-box; background:#14171c; border:1px solid #2a2f38; color:#ddd; padding:7px 9px; border-radius:4px; margin-top:3px; }
-  .add-form select[multiple] { height:110px; }
   .add-form .row { display:flex; gap:12px; }
   .add-form .row > div { flex:1; }
+  .chip-box { display:flex; flex-wrap:wrap; gap:6px; min-height:34px; margin-top:8px; padding:6px;
+              background:#14171c; border:1px solid #2a2f38; border-radius:4px; }
+  .chip-box:empty::after { content:"None picked yet"; color:#555; font-size:12px; padding:4px 2px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:#262b33; color:#ddd;
+          border-radius:999px; padding:4px 6px 4px 12px; font-size:13px; }
+  .chip button { background:none; border:0; color:#888; font-size:16px; line-height:1; cursor:pointer;
+                 padding:0 6px; border-radius:50%; }
+  .chip button:hover { color:#e05d5d; background:#1b1f26; }
   .err { background:#3a1f1f; border:1px solid #5a2a2a; color:#e05d5d; padding:10px 14px; border-radius:6px; margin-top:12px; }
   .muted { color:#777; font-size:13px; }
   .empty { color:#777; padding:16px 0; }
@@ -88,16 +95,20 @@
         <input name="name" placeholder="family" required>
       </div>
       <div>
-        <label>Source account(s) - ctrl/cmd-click to pick more than one</label>
-        <select name="sources" multiple required>
+        <label>Source account(s)</label>
+        <select id="sources-picker">
+          <option value="">+ Add account&hellip;</option>
           {% for a in accounts %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
         </select>
+        <div class="chip-box" id="sources-chips"></div>
       </div>
       <div>
-        <label>Target account(s) - ctrl/cmd-click to pick more than one</label>
-        <select name="targets" multiple required>
+        <label>Target account(s)</label>
+        <select id="targets-picker">
+          <option value="">+ Add account&hellip;</option>
           {% for a in accounts %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
         </select>
+        <div class="chip-box" id="targets-chips"></div>
       </div>
     </div>
     <div style="margin-top:12px;"><button type="submit">Add rule</button></div>
@@ -107,6 +118,61 @@
     starting up or temporarily unreachable. Reload once it's back.</p>
   {% endif %}
 </div>
+
+<script>
+function setupChipPicker(pickerId, chipsId, fieldName) {
+  var picker = document.getElementById(pickerId);
+  var chips = document.getElementById(chipsId);
+  if (!picker || !chips) return;
+
+  function addChip(value) {
+    if (!value) return;
+    if (chips.querySelector('[data-value="' + CSS.escape(value) + '"]')) return;
+    var chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.dataset.value = value;
+
+    var label = document.createElement('span');
+    label.textContent = value;
+    chip.appendChild(label);
+
+    var removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.setAttribute('aria-label', 'Remove ' + value);
+    chip.appendChild(removeBtn);
+
+    var hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = fieldName;
+    hidden.value = value;
+    chip.appendChild(hidden);
+
+    chips.appendChild(chip);
+
+    var opt = picker.querySelector('option[value="' + CSS.escape(value) + '"]');
+    if (opt) opt.disabled = true;
+  }
+
+  picker.addEventListener('change', function () {
+    addChip(picker.value);
+    picker.value = '';
+  });
+
+  chips.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var chip = btn.closest('.chip');
+    var value = chip.dataset.value;
+    chip.remove();
+    var opt = picker.querySelector('option[value="' + CSS.escape(value) + '"]');
+    if (opt) opt.disabled = false;
+  });
+}
+
+setupChipPicker('sources-picker', 'sources-chips', 'sources');
+setupChipPicker('targets-picker', 'targets-chips', 'targets');
+</script>
 
 <h2>Recent activity</h2>
 {% if activity %}
